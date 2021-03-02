@@ -1,5 +1,5 @@
-#ifndef ENUMS_H
-#define ENUMS_H
+#ifndef ENUM_H
+#define ENUM_H
 enum Type_Server{UNDEF = 0, GE, R, MO, IP, PD, SMNK139}; // Тип сервера
 
 enum Orders{
@@ -17,4 +17,4 @@ enum Orders{
 };
 
 enum Statement{FREE = 0, SINGLE_USE, MULTI_USE, SYSTEM}; // Состояния кнопок виджета проц-й привязки
-#endif // ENUMS_H
+#endif // ENUM_H

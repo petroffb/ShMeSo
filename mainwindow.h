@@ -138,7 +138,7 @@ public:
 signals:
     void chpock();
 public slots:
-    void OnClicked();    
+    void OnClicked();
 };
 
 // Информационное окно
@@ -243,5 +243,4 @@ class WgtWrhgConfig : public QWidget {
 public:
     WgtWrhgConfig(QWidget* prnt = nullptr);
 };
-
 #endif // MAINWINDOW_H

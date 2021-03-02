@@ -59,6 +59,7 @@ MainWindow::~MainWindow()
 void MainWindow::NewTab() {
     wgtTabs->addTab(new WgtForTab((Type_Server)cmb_srv_type->currentIndex() ,txt_ip_serv->text(), txt_login_serv->text(),
                                   txt_pass_serv->text(), wgtTabs), txt_ip_serv->text());
+    qDebug() << "NewTab DONE";
 
 }
 
@@ -86,7 +87,6 @@ WgtForTab::WgtForTab(Type_Server type_srv ,QString address, QString log, QString
     Remote_act(GET_CONF_REPLICATOR, true);
     Remote_act(GET_CONF_CZ_1, true);
     Remote_act(GET_CONF_CZ_2, true);
-
 // ==== Информационная строка ====
     lbl_type_server = new QLabel;
     lbl_type_server->resize(100, 40);
@@ -585,23 +585,33 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
         }
     }
 // Создание дерева модулей
+    qDebug() << "Starting to create tree";
     QStringList prnts_list;
     QMap<QString, QTreeWidgetItem*> prnts;
+    qDebug() << "Creating tree: check 8";
+    qDebug() << modules_affinity_original.keys();
     foreach (QString str, modules_affinity_original.keys()) {
+        qDebug() << "Creating tree: check 9";
         wgt_list_modules->setAutoScroll(true);
         if (str.contains('|')) {
             QString tmp_str_prnt = str.split('|').at(0);
             if (prnts_list.contains(tmp_str_prnt)){
+                qDebug() << "Creating tree: check 2";
                 item_module = new QTreeWidgetItem(prnts.value(tmp_str_prnt));
+                qDebug() << "Creating tree: check 3";
                 item_module->setText(0, str.split('/').at(0).split('|').at(1));
                 item_module->setText(1, str);
             }else{
                 // Создание родителя (только текст в дереве)
+                qDebug() << "Creating tree: check 4";
                 item_module = new QTreeWidgetItem(wgt_list_modules);
+                qDebug() << "Creating tree: check 5";
                 prnts[tmp_str_prnt] = item_module;
                 prnts_list.push_back(tmp_str_prnt);
                 item_module->setText(0, tmp_str_prnt);
+                qDebug() << "Creating tree: check 6";
                 QTreeWidgetItem* item_chld = new QTreeWidgetItem(item_module);
+                qDebug() << "Creating tree: check 7";
                 item_chld->setText(0, str.split('/').at(0).split('|').at(1));
                 item_chld->setText(1, str);
             }
@@ -614,7 +624,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
     }
     wgt_list_modules->setCurrentItem(wgt_list_modules->itemAt(0,0));
     wgt_list_modules->itemAt(0,0)->setSelected(true);
-
+    qDebug() << "Creating tree: check 1";
     // ==== Test ====>/
 
     // <==== Test ==== В шатаном режиме сначала считывание кол-ва ЦПУ и ядер
@@ -669,6 +679,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
     default:
         std::cout << "Wrong CPU's count " <<std::endl;
         break;
+    qDebug() << "CPUAffinity DONE";
     }
 
     SetChecks(modules_affinity_original.value(wgt_list_modules->currentItem()->text(1)));
@@ -701,9 +712,9 @@ QString WgtCPUAffinity::GetAffinity(){
     return result;
 }
 
-void WgtCPUAffinity::SetChecks(QString affinity) {    
+void WgtCPUAffinity::SetChecks(QString affinity) {
     if(affinity.isEmpty()) {
-        lbl_CPUS_count_HEX->setText("Error");        
+        lbl_CPUS_count_HEX->setText("Error");
     } else {
         bool ok;
         QString binary = QString::number(affinity.toLongLong(&ok, 16), 2);
@@ -713,7 +724,7 @@ void WgtCPUAffinity::SetChecks(QString affinity) {
             message->show();
             return;
         }
-        lbl_CPUS_count_HEX->setText(affinity);                
+        lbl_CPUS_count_HEX->setText(affinity);
         foreach (CPUCoreButton* button, vct_buttons) {
             button->setState(Statement::FREE);
         }
@@ -838,3 +849,5 @@ WgtCenzorConfig::WgtCenzorConfig(QWidget* prnt) : QWidget(prnt) {
 WgtWrhgConfig::WgtWrhgConfig(QWidget* prnt) : QWidget(prnt) {
 
 }
+
+
