@@ -39,7 +39,7 @@ private:
     QLabel* lbl_pass_serv;          // Инфо поле ввода пароля сервера
     QLineEdit* txt_pass_serv;        // Поле ввода пароля для подключения
     QPushButton* btn_connect_to_serv;   // Кнопка подключения к серверу по указанному в поле адресу
-    QComboBox* cmb_srv_type;
+    QComboBox* cmb_srv_type;          // Выпадающий список типов серверов
 
 
 public slots:
@@ -72,7 +72,8 @@ public:
 // ====> Команды (Instructions) и результаты ====
     std::list<std::string> list_instructions;
     QMap<Orders, QString> instructions_and_results;
-    QString config_path = "/home/user/programs.config/";
+//    QString config_path = "/home/user/programs.config/";
+    QString config_path = "/home/user/programs.config_test/"; // For tests
     QString instruction_ls_conf = "ls " + config_path;
     QString instruction_get_cz_1 = "cat " + config_path + "cenzor/cenzor.1.ini";
     QString instruction_get_cz_2 = "cat " + config_path + "cenzor/cenzor.2.ini";
@@ -82,6 +83,8 @@ public:
     QString instruction_get_nodes_count = "lscpu | grep \"NUMA node(s)\" | sed 's/[^0-9]//g'";
     QString instruction_get_ipmimon = "cat " + config_path + "ipmimon/ipmimon.xml";
     QString instruction_get_replicator = "cat " + config_path + "replicator/replicator.xml";
+    QString instruction_get_sorm = "cat " + config_path + "sorm/sorm.xml";
+    QString instruction_get_xmanager = "cat " + config_path + "xmanager/xmanager.xml";
     QStringList instruction_set_aff_cz_test = {"", ""};
 
 // <==== Команды (Instructions) и результаты ====
@@ -89,7 +92,10 @@ public:
 
     ssh_session ssh_sess;
     Type_Server srv_type;               // Тип сервера
-
+    QString srv_type_str;
+    QString host_address;
+    QString login;
+    QString password;
 
 public slots:
     void connect_check();
@@ -116,9 +122,7 @@ private:
     WgtTextEdit* manager;
     WgtTextEdit* ipmimon;
 
-    QString host_address;
-    QString login;
-    QString password;
+
 };
 
 // Виджеты для настройки процессорной привязки

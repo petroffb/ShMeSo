@@ -15,6 +15,15 @@ MainWindow::MainWindow(QWidget *parent)
     lbl_ip_serv_info = new QLabel("IP сервера");
     txt_ip_serv = new QLineEdit();
     cmb_srv_type = new QComboBox;
+    // ====> Выпадающий список типов серверов, наполнение
+    cmb_srv_type->insertItem(0, "UNDEFINITE");
+    cmb_srv_type->insertItem(1, "GE");
+    cmb_srv_type->insertItem(2, "R");
+    cmb_srv_type->insertItem(3, "MO");
+    cmb_srv_type->insertItem(4, "IP");
+    cmb_srv_type->insertItem(5, "PD");
+    cmb_srv_type->insertItem(6, "SMNK 139");
+    // <==== Выпадающий список типов серверов, наполнение
     lbl_login_serv = new QLabel("Логин");
     txt_login_serv = new QLineEdit("user");
     lbl_pass_serv = new QLabel("Пароль");
@@ -72,9 +81,34 @@ void MainWindow::onTabCloseRequest(int index) {
 WgtForTab::WgtForTab(Type_Server type_srv ,QString address, QString log, QString pass, QWidget *prnt) : QWidget(prnt)
 {
     srv_type = type_srv;
+    switch (srv_type) {
+    case UNDEF:
+        srv_type_str = "UNDEFINITE";
+        break;
+    case GE:
+        srv_type_str = "GE";
+        break;
+    case R:
+        srv_type_str = "R";
+        break;
+    case MO:
+        srv_type_str = "MO";
+        break;
+    case IP:
+        srv_type_str = "IP";
+        break;
+    case PD:
+        srv_type_str = "PD";
+        break;
+    case SMNK139:
+        srv_type_str = "SMNK 139";
+        break;
+    }
+
     host_address = address;
     login = log;
     password = pass;
+
     Connect_via_ssh(host_address, login, password);
 // ==== Читаем характеристики сервера
 
@@ -85,6 +119,8 @@ WgtForTab::WgtForTab(Type_Server type_srv ,QString address, QString log, QString
     Remote_act(GET_CPUS_COUNT, true);
     Remote_act(GET_CONF_IPMIMON, true);
     Remote_act(GET_CONF_REPLICATOR, true);
+    Remote_act(GET_CONF_SORM, true);
+    Remote_act(GET_CONF_XMANAGER, true);
     Remote_act(GET_CONF_CZ_1, true);
     Remote_act(GET_CONF_CZ_2, true);
 // ==== Информационная строка ====
@@ -92,6 +128,7 @@ WgtForTab::WgtForTab(Type_Server type_srv ,QString address, QString log, QString
     lbl_type_server->resize(100, 40);
     lbl_type_server->setText("Тип сервера");
     txt_type_server = new QLineEdit("UNDEF");
+    txt_type_server->setText(srv_type_str);
     txt_type_server->setReadOnly(true);
     lbl_hostname = new QLabel("HostName");
 //    lbl_hostname->resize(140, 40);
@@ -294,6 +331,12 @@ int WgtForTab::Remote_act(Orders order, bool gs) {
         break;
     case GET_CONF_REPLICATOR:
         rc = ssh_channel_request_exec(channel, instruction_get_replicator.toLocal8Bit().data());
+        break;
+    case GET_CONF_SORM:
+        rc = ssh_channel_request_exec(channel, instruction_get_sorm.toLocal8Bit().data());
+        break;
+    case GET_CONF_XMANAGER:
+        rc = ssh_channel_request_exec(channel, instruction_get_xmanager.toLocal8Bit().data());
         break;
     case GET_CONF_CZ_1:
         rc = ssh_channel_request_exec(channel, instruction_get_cz_1.toLocal8Bit().data());
@@ -546,6 +589,8 @@ InfoMessage::InfoMessage(QString message, QWidget *prnt) : QWidget(prnt){
 }
 // <---- InfoMessage ----
 WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_results, QWidget *prnt) : QWidget(prnt) {
+    qDebug() << "Current instructions" << instructions_and_results.keys();
+    qDebug() << "Current instructions" << instructions_and_results.values();
     SetCPUCount(instructions_and_results.value(GET_NODES_COUNT).toInt());
     SetCoresCount(instructions_and_results.value(GET_CPUS_COUNT).toInt());
     centralLayout = new QBoxLayout(QBoxLayout::TopToBottom);
@@ -567,6 +612,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
                 // Регулярка взятия подстроки только значения ключа
                 QRegExp rxf("\\d{1}x{0,1}[0-9aAbBcCdDeEfF]{1,}");
                 rxf.indexIn(rx.cap(0));
+                qDebug() << rxf.cap(0);
                 modules_affinity_original[str.at(0)] = rxf.cap(0);
                 modules_affinity_modified[str.at(0)] = rxf.cap(0);
             }
@@ -578,6 +624,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
                     // Регулярка взятия подстроки только значения ключа
                     QRegExp rxf("\\d{1}x{0,1}[0-9aAbBcCdDeEfF]{1,}");
                     rxf.indexIn(rx.cap(0));
+                    qDebug() << rxf.cap(0);
                     modules_affinity_original[str_buf] = rxf.cap(0);
                     modules_affinity_modified[str_buf] = rxf.cap(0);
                 }
@@ -588,7 +635,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
     qDebug() << "Starting to create tree";
     QStringList prnts_list;
     QMap<QString, QTreeWidgetItem*> prnts;
-    qDebug() << "Creating tree: check 8";
+//    qDebug() << "Creating tree: check 8";
     qDebug() << modules_affinity_original.keys();
     foreach (QString str, modules_affinity_original.keys()) {
         qDebug() << "Creating tree: check 9";
@@ -746,6 +793,12 @@ QStringList WgtCPUAffinity::GetModuleName(Orders ord) {
         break;
     case GET_CONF_REPLICATOR:
         result.push_back("Replicator/cpu_affinity_mask");
+        break;
+    case GET_CONF_SORM:
+        result.push_back("Sorm/affinity_low");
+        break;
+    case GET_CONF_XMANAGER:
+        result.push_back("Xmanager/cpu_affinity_mask");
         break;
     case GET_CONF_CZ_1:
         result.push_back("Cenzor_1|HTG маска/htg_s4g_mt_affinity_mask");
