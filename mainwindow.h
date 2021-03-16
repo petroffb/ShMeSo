@@ -174,7 +174,8 @@ public:
     QVector<QCheckBox*> vct_check_box;
     QVector <CPUCoreButton*> vct_buttons;
     QVector<QHBoxLayout*> vct_hlt;
-    QLabel* lbl_CPUS_count_HEX;
+    QLabel* lbl_CPUS_count_HEX_low;
+    QLabel* lbl_CPUS_count_HEX_high;
     // <==== Поле чекбоксов\кнопок
 
 

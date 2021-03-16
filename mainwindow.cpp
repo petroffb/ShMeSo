@@ -345,6 +345,7 @@ int WgtForTab::Remote_act(Orders order, bool gs) {
         rc = ssh_channel_request_exec(channel, instruction_get_cz_2.toLocal8Bit().data());
         break;
     case SET_CONF_CZ_1:
+        // Для вставки сразу нескольких значений использовать ключ -i -e '/asd/asd/; /asd/asd/'
 //        rc = ssh_channel_request_exec(channel,
 //                                      QString("sed -i \"/^%1/c htg_s4g_mt_affinity_mask=0x000ffff\" " +
 //                                      config_path + "cenzor/cenzor.test.ini").arg("htg_s4g_mt_affinity_mask=").toStdString().data());
@@ -365,6 +366,17 @@ int WgtForTab::Remote_act(Orders order, bool gs) {
             }
         }
         break;
+    case SET_CONF_SORM:
+        // Регулярка вставки значения при известном ключе
+        // sed '/SORM/s/\(affinity_low=\"\)[0-9aAbBcCdDeEfFx]\{1,\}\"/\10x01111\"/' ./sorm_test.xml
+        // Для вставки сразу нескольких значений использовать ключ -i -e '/asd/asd/; /asd/asd/'
+        {QString str = "0x011011101";
+        qDebug() << QString("sed -i '/SORM/s/\(affinity_high=\"\\)[0-9aAbBcCdDeEfFx]\{1,\\}\"/\1" +
+                            str + "\"/' " + config_path + "sorm/sorm.xml").toStdString().data();
+        rc = ssh_channel_request_exec(channel,
+                    QString("sed -i '/SORM/s/\\(affinity_high=\"\\)[0-9aAbBcCdDeEfFx]\\{1,\\}\"/\\1" +
+                            str + "\"/' " + config_path + "sorm/sorm.xml").toStdString().data());
+        break;}
     default:
         break;
     }
@@ -415,7 +427,8 @@ void WgtForTab::connect_check() {
 
 void WgtForTab::OnSaveAffinity() {
     Connect_via_ssh(host_address, login, password);
-    Remote_act(SET_CONF_CZ_1, false) ? qDebug() << "true" : qDebug() << "false";
+//    Remote_act(SET_CONF_CZ_1, false) ? qDebug() << "true" : qDebug() << "false";
+    Remote_act(SET_CONF_SORM, false);
     StopSSHSess();
 }
 
@@ -589,8 +602,8 @@ InfoMessage::InfoMessage(QString message, QWidget *prnt) : QWidget(prnt){
 }
 // <---- InfoMessage ----
 WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_results, QWidget *prnt) : QWidget(prnt) {
-    qDebug() << "Current instructions" << instructions_and_results.keys();
-    qDebug() << "Current instructions" << instructions_and_results.values();
+//    qDebug() << "Current instructions" << instructions_and_results.keys();
+//    qDebug() << "Current instructions" << instructions_and_results.values();
     SetCPUCount(instructions_and_results.value(GET_NODES_COUNT).toInt());
     SetCoresCount(instructions_and_results.value(GET_CPUS_COUNT).toInt());
     centralLayout = new QBoxLayout(QBoxLayout::TopToBottom);
@@ -601,7 +614,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
     wgt_list_modules->setFixedWidth(325);
     wgt_list_modules->setHeaderLabel("Модули");
     hlt->addWidget(wgt_list_modules);
-    // ==== Test ==== В штатном режиме наполнение листа по наличию модулей
+
     foreach (Orders ord, instructions_and_results.keys()) {
         QStringList str = GetModuleName(ord);
         if (str.isEmpty()) continue;
@@ -612,7 +625,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
                 // Регулярка взятия подстроки только значения ключа
                 QRegExp rxf("\\d{1}x{0,1}[0-9aAbBcCdDeEfF]{1,}");
                 rxf.indexIn(rx.cap(0));
-                qDebug() << rxf.cap(0);
+//                qDebug() << rxf.cap(0);
                 modules_affinity_original[str.at(0)] = rxf.cap(0);
                 modules_affinity_modified[str.at(0)] = rxf.cap(0);
             }
@@ -624,7 +637,7 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
                     // Регулярка взятия подстроки только значения ключа
                     QRegExp rxf("\\d{1}x{0,1}[0-9aAbBcCdDeEfF]{1,}");
                     rxf.indexIn(rx.cap(0));
-                    qDebug() << rxf.cap(0);
+//                    qDebug() << rxf.cap(0);
                     modules_affinity_original[str_buf] = rxf.cap(0);
                     modules_affinity_modified[str_buf] = rxf.cap(0);
                 }
@@ -632,33 +645,24 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
         }
     }
 // Создание дерева модулей
-    qDebug() << "Starting to create tree";
     QStringList prnts_list;
     QMap<QString, QTreeWidgetItem*> prnts;
 //    qDebug() << "Creating tree: check 8";
-    qDebug() << modules_affinity_original.keys();
     foreach (QString str, modules_affinity_original.keys()) {
-        qDebug() << "Creating tree: check 9";
         wgt_list_modules->setAutoScroll(true);
         if (str.contains('|')) {
             QString tmp_str_prnt = str.split('|').at(0);
             if (prnts_list.contains(tmp_str_prnt)){
-                qDebug() << "Creating tree: check 2";
                 item_module = new QTreeWidgetItem(prnts.value(tmp_str_prnt));
-                qDebug() << "Creating tree: check 3";
                 item_module->setText(0, str.split('/').at(0).split('|').at(1));
                 item_module->setText(1, str);
             }else{
                 // Создание родителя (только текст в дереве)
-                qDebug() << "Creating tree: check 4";
                 item_module = new QTreeWidgetItem(wgt_list_modules);
-                qDebug() << "Creating tree: check 5";
                 prnts[tmp_str_prnt] = item_module;
                 prnts_list.push_back(tmp_str_prnt);
                 item_module->setText(0, tmp_str_prnt);
-                qDebug() << "Creating tree: check 6";
                 QTreeWidgetItem* item_chld = new QTreeWidgetItem(item_module);
-                qDebug() << "Creating tree: check 7";
                 item_chld->setText(0, str.split('/').at(0).split('|').at(1));
                 item_chld->setText(1, str);
             }
@@ -671,14 +675,17 @@ WgtCPUAffinity::WgtCPUAffinity(const QMap<Orders, QString> & instructions_and_re
     }
     wgt_list_modules->setCurrentItem(wgt_list_modules->itemAt(0,0));
     wgt_list_modules->itemAt(0,0)->setSelected(true);
-    qDebug() << "Creating tree: check 1";
     // ==== Test ====>/
 
     // <==== Test ==== В шатаном режиме сначала считывание кол-ва ЦПУ и ядер
     group_cores = new QGroupBox("Cores");
     QVBoxLayout* vlt_cores = new QVBoxLayout;
-    lbl_CPUS_count_HEX = new QLabel("0x");
-    vlt_cores->addWidget(lbl_CPUS_count_HEX);
+    lbl_CPUS_count_HEX_low = new QLabel("0x");
+    vlt_cores->addWidget(lbl_CPUS_count_HEX_low);
+    if (cores_count > 56) {
+        lbl_CPUS_count_HEX_high = new QLabel("0x");
+        vlt_cores->addWidget(lbl_CPUS_count_HEX_high);
+    }
 
     int check = cores_count / cpus_count;
     switch (cpus_count) {
@@ -761,7 +768,7 @@ QString WgtCPUAffinity::GetAffinity(){
 
 void WgtCPUAffinity::SetChecks(QString affinity) {
     if(affinity.isEmpty()) {
-        lbl_CPUS_count_HEX->setText("Error");
+        lbl_CPUS_count_HEX_low->setText("Error");
     } else {
         bool ok;
         QString binary = QString::number(affinity.toLongLong(&ok, 16), 2);
@@ -771,7 +778,7 @@ void WgtCPUAffinity::SetChecks(QString affinity) {
             message->show();
             return;
         }
-        lbl_CPUS_count_HEX->setText(affinity);
+        lbl_CPUS_count_HEX_low->setText(affinity);
         foreach (CPUCoreButton* button, vct_buttons) {
             button->setState(Statement::FREE);
         }
@@ -849,7 +856,7 @@ void WgtCPUAffinity::On_CheckBox_Clicked(){
     bool ok;
     QString hex_value = "0x" + QString("%1").arg(GetAffinity().toULongLong(&ok, 2),
                                                  15, 16, QChar('0'));
-    lbl_CPUS_count_HEX->setText(hex_value);
+    lbl_CPUS_count_HEX_low->setText(hex_value);
     if(wgt_list_modules->currentItem()->parent()) {
         modules_affinity[(wgt_list_modules->currentItem()->parent()->text(0)
                           + "|" + wgt_list_modules->currentItem()->text(0))] = hex_value;
@@ -863,7 +870,7 @@ void WgtCPUAffinity::OnCPUButtonChpock(){
     bool ok;
     QString hex_value = "0x" + QString("%1").arg(GetAffinity().toULongLong(&ok, 2),
                                                  15, 16, QChar('0'));
-    lbl_CPUS_count_HEX->setText(hex_value);
+    lbl_CPUS_count_HEX_low->setText(hex_value);
     if(wgt_list_modules->currentItem()->parent()) {
         modules_affinity[(wgt_list_modules->currentItem()->parent()->text(0)
                           + "|" + wgt_list_modules->currentItem()->text(0))] = hex_value;

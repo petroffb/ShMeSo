@@ -14,7 +14,8 @@ enum Orders{
     GET_CONF_CZ_1,
     GET_CONF_CZ_2,
     SET_CONF_CZ_1 = 300,
-    SET_CONF_CZ_2
+    SET_CONF_CZ_2,
+    SET_CONF_SORM
 };
 
 enum Statement{FREE = 0, SINGLE_USE, MULTI_USE, SYSTEM}; // Состояния кнопок виджета проц-й привязки
